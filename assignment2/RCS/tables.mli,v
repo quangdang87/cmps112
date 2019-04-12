@@ -1,0 +1,55 @@
+head	1.2;
+access;
+symbols;
+locks;
+comment	@# @;
+
+
+1.2
+date	2019.01.30.06.44.36;	author -;	state -;
+branches;
+next	1.1;
+
+1.1
+date	2019.01.29.04.15.09;	author -;	state -;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.2
+log
+@-
+@
+text
+@(* Generated: Tue Jan 29 09:08:24 PST 2019 *)
+(* Quang Dang 
+* qvdang
+*)
+type variable_table_t = (string, float) Hashtbl.t
+type array_table_t = (string, float array) Hashtbl.t
+type unary_fn_table_t = (string, float -> float) Hashtbl.t
+type binary_fn_table_t = (string, float -> float -> float) Hashtbl.t
+type label_table_t = (string, Absyn.program) Hashtbl.t
+val variable_table : variable_table_t
+val array_table : array_table_t
+val unary_fn_table : unary_fn_table_t
+val binary_fn_table : binary_fn_table_t
+val label_table : label_table_t
+val init_label_table : Absyn.program -> unit
+val dump_label_table : unit -> unit
+@
+
+
+1.1
+log
+@-
+@
+text
+@d1 4
+a4 1
+(* Generated: Mon Jan 28 12:34:50 PST 2019 *)
+@

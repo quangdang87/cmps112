@@ -1,0 +1,304 @@
+head	1.5;
+access;
+symbols;
+locks;
+comment	@; @;
+
+
+1.5
+date	2019.02.04.20.28.27;	author -;	state -;
+branches;
+next	1.4;
+
+1.4
+date	2019.01.30.19.29.28;	author -;	state -;
+branches;
+next	1.3;
+
+1.3
+date	2019.01.30.06.33.35;	author -;	state -;
+branches;
+next	1.2;
+
+1.2
+date	2019.01.30.03.24.37;	author -;	state -;
+branches;
+next	1.1;
+
+1.1
+date	2019.01.29.04.15.01;	author -;	state -;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.5
+log
+@-
+@
+text
+@(* Quang Dang *)
+(* qvdang *)
+
+open Absyn
+
+exception Unimplemented of string
+let unimpl reason = raise (Unimplemented reason)
+
+let want_dump = ref false
+
+let rec eval_expr (expr : Absyn.expr) : float = match expr with
+    | Number number -> number
+    | Memref memref -> (match memref with
+        | Arrayref (ident, expr2) -> 
+            (Hashtbl.find Tables.array_table ident).
+                ((int_of_float (eval_expr expr2)))
+        | Variable ident -> 
+            (Hashtbl.find Tables.variable_table ident))
+    | Unary (oper, expr) -> 
+        ((Hashtbl.find Tables.unary_fn_table oper) (eval_expr expr)) 
+    | Binary (oper, expr1, expr2) ->
+        ((Hashtbl.find Tables.binary_fn_table oper) 
+            (eval_expr expr1) (eval_expr expr2))   
+
+let eval_bool_expr (expr : Absyn.expr ) : bool = match expr with
+    | Number number -> false
+    | Unary (oper, expr) -> false
+    | Memref memref -> false
+    | Binary (oper, expr1, expr2) -> 
+        ((Hashtbl.find Tables.binary_bool_table oper) 
+            (eval_expr expr1) (eval_expr expr2))
+
+let interp_let ((memref : Absyn.memref), 
+    (expr: Absyn.expr)) = match memref with
+    | Arrayref (ident, expr2) -> 
+        let arr = (Hashtbl.find Tables.array_table ident) in
+            if ((Array.length arr) >= 
+                (int_of_float (eval_expr expr2))) then
+                arr.((int_of_float (eval_expr expr2))) 
+                <- (eval_expr expr)
+            else raise (Unimplemented "Out of array's range")
+    | Variable ident -> 
+        (Hashtbl.add Tables.variable_table ident (eval_expr expr))
+
+let interp_dim ((ident : Absyn.ident), (expr : Absyn.expr)) = 
+    Hashtbl.replace Tables.array_table ident 
+        (Array.make (int_of_float (eval_expr expr) + 1) 0.0)
+
+let interp_print (print_list : Absyn.printable list) =
+    let print_item item =
+        (print_string " ";
+         match item with
+         | String string ->
+           let regex = Str.regexp "\"\\(.*\\)\""
+           in print_string (Str.replace_first regex "\\1" string)
+         | Printexpr expr ->
+           print_float (eval_expr expr))
+    in (List.iter print_item print_list; print_newline ())
+
+let interp_input (memref_list : Absyn.memref list) =
+    let input_number memref = 
+        try let number = Etc.read_number () 
+            in match memref with
+            | Variable var -> 
+                Hashtbl.add Tables.variable_table var number
+            | Arrayref (ident, expr2) -> 
+                let arr = 
+                    (Hashtbl.find Tables.array_table ident) in
+                    if ((Array.length arr) 
+                        > (int_of_float (eval_expr expr2))) then
+                        arr.((int_of_float (eval_expr expr2)))
+                        <- number
+                    else raise 
+                       (Unimplemented "Out of array's range")
+        with End_of_file -> 
+            Hashtbl.replace Tables.variable_table "eof" 1.0
+    in List.iter input_number memref_list
+
+let interp_goto (labls : Absyn.label)  = 
+    Hashtbl.find Tables.label_table labls
+
+let interp_if ((expr : Absyn.expr), (label : Absyn.label )) = 
+    if (eval_bool_expr expr) then Some (interp_goto label)
+    else None
+
+let interp_stmt (stmt : Absyn.stmt) :
+    Absyn.program option = match stmt with
+    | Dim (ident, expr) -> (interp_dim (ident, expr); None) 
+    | Let (memref, expr) -> (interp_let (memref, expr); None)
+    | Goto labsl -> Some (interp_goto labsl)
+    | If (expr, label) -> interp_if (expr, label)
+    | Print print_list -> (interp_print print_list; None)
+    | Input memref_list -> (interp_input memref_list; None)
+
+let rec interpret (program : Absyn.program) = match program with
+    | [] -> ()
+    | firstline::otherlines -> match firstline with
+      | _, _, None -> interpret otherlines
+      | _, _, Some stmt -> let next_line = interp_stmt stmt in
+        match next_line with
+            | None -> interpret otherlines
+            | Some line -> interpret line 
+let interpret_program program =
+    (Tables.init_label_table program; 
+     if !want_dump then Tables.dump_label_table ();
+     if !want_dump then Dumper.dump_program program;
+     interpret program)
+
+@
+
+
+1.4
+log
+@-
+@
+text
+@d14 10
+a23 4
+		|Arrayref (ident, expr2) ->  (Hashtbl.find Tables.array_table ident).((int_of_float (eval_expr expr2)))
+		|Variable ident -> (Hashtbl.find Tables.variable_table ident))
+    | Unary (oper, expr) -> ((Hashtbl.find Tables.unary_fn_table oper) (eval_expr expr)) 
+    | Binary (oper, expr1, expr2) -> ((Hashtbl.find Tables.binary_fn_table oper) (eval_expr expr1) (eval_expr expr2))   
+d26 18
+a43 11
+	|Number number -> false
+	|Unary (oper, expr) -> false
+	|Memref memref -> false
+	|Binary (oper, expr1, expr2) -> ((Hashtbl.find Tables.binary_bool_table oper) (eval_expr expr1) (eval_expr expr2))
+
+let interp_let ((memref : Absyn.memref), (expr: Absyn.expr)) = match memref with
+	|Arrayref (ident, expr2) -> let arr = (Hashtbl.find Tables.array_table ident) in
+		if ((Array.length arr) >= (int_of_float (eval_expr expr2))) then
+			arr.((int_of_float (eval_expr expr2))) <- (eval_expr expr)
+		else raise (Unimplemented "Out of array's range")
+	|Variable ident -> (Hashtbl.add Tables.variable_table ident (eval_expr expr))
+d46 2
+a47 2
+	Hashtbl.replace Tables.array_table ident (Array.make (int_of_float (eval_expr expr) + 1) 0.0)
+
+d61 16
+a76 9
+    let input_number memref =
+        try  let number = Etc.read_number ()
+             in match memref with
+		|Variable var -> Hashtbl.add Tables.variable_table var number
+		|Arrayref (ident, expr2) -> let arr = (Hashtbl.find Tables.array_table ident) in
+			if ((Array.length arr) > (int_of_float (eval_expr expr2))) then
+				arr.((int_of_float (eval_expr expr2))) <- number
+			else raise (Unimplemented "Out of array's range")
+        with End_of_file -> Hashtbl.replace Tables.variable_table "eof" 1.0
+d80 1
+a80 1
+	Hashtbl.find Tables.label_table labls
+d82 3
+a84 3
+let interp_if ((expr : Absyn.expr), (label : Absyn.label )) =
+	if (eval_bool_expr expr) then Some (interp_goto label)
+	else None
+d86 2
+a87 1
+let interp_stmt (stmt : Absyn.stmt) : Absyn.program option = match stmt with
+a94 2
+
+
+d100 3
+a102 5
+		match next_line with
+		| None -> interpret otherlines
+		| Some line -> interpret line 
+
+
+@
+
+
+1.3
+log
+@-
+@
+text
+@a0 1
+(* $Id: interp.ml,v 1.2 2019-01-29 19:24:37-08 - - $ *)
+d19 6
+d27 1
+a27 1
+		if ((Array.length arr) > (int_of_float (eval_expr expr2))) then
+d30 1
+a30 1
+	|Variable ident -> (Hashtbl.replace Tables.variable_table ident (eval_expr expr))
+d33 1
+a33 1
+	Hashtbl.replace Tables.array_table ident (Array.make (int_of_float (eval_expr expr)) 0.0)
+d50 7
+a56 3
+             in (print_float number; print_newline ())
+        with End_of_file -> 
+             (print_string "End_of_file"; print_newline ())
+d59 1
+a59 1
+let interp_goto ((labls : Absyn.label)) = 
+d62 3
+a64 2
+let interp_if ((expr : Absyn.expr), (label : Absyn.label)) =
+	print_string "I am interp_if"
+d70 1
+a70 1
+    | If (expr, label) -> (interp_if (expr, label); None)
+d73 2
+@
+
+
+1.2
+log
+@-
+@
+text
+@d1 3
+a3 1
+(* $Id: interp.ml,v 1.1 2019-01-28 20:15:01-08 - - $ *)
+d15 1
+a15 1
+		|Arrayref (ident, expr) ->  (Hashtbl.find Tables.array_table ident).((int_of_float (eval_expr expr)))
+d17 1
+a17 1
+    | Unary (oper, expr) -> unimpl "eval_expr Unary"
+d19 12
+a30 2
+let interp_let ((memref : Absyn.memref), (expr: Absyn.expr)) = 
+	print_string "hello, I am here"	
+d50 13
+a62 7
+let interp_stmt (stmt : Absyn.stmt) = match stmt with
+    | Dim (ident, expr) -> unimpl "Dim (ident, expr)"
+    | Let (memref, expr) -> interp_let (memref, expr)
+    | Goto labsl -> unimpl "Goto labsl"
+    | If (expr, label) -> unimpl "If (expr, label)"
+    | Print print_list -> interp_print print_list
+    | Input memref_list -> interp_input memref_list
+d68 5
+a72 1
+      | _, _, Some stmt -> (interp_stmt stmt; interpret otherlines)
+@
+
+
+1.1
+log
+@-
+@
+text
+@d1 1
+a1 1
+(* $Id: interp.ml,v 1.6 2019-01-24 19:14:14-08 - - $ *)
+d12 3
+a14 1
+    | Memref memref -> unimpl "eval_expr Memref"
+d16 3
+a18 2
+    | Binary (oper, expr1, expr2) -> unimpl "eval_expr Binary"
+
+d40 1
+a40 1
+    | Let (memref, expr) -> unimpl "Let (memref, expr)"
+@

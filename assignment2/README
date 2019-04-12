@@ -1,0 +1,27 @@
+;; README
+;; CMPS 112 - WINTER 2019
+;; Quang Dang
+;; qvdang
+;; 
+;; Assignment 2 - Ocaml - SBIR interpreter
+;;
+;; DESCRIPTION
+;; 	The program use for interpret codes in BASIC language. 
+;;	The program is edited based on files which were given in /afs/cats.ucsc.edu/courses/cmps112-wm/Assignments/asg2-ocaml-interp/code-interp
+;; 
+;; FILES SUBMITTED :
+;;	1) README
+;;	2) absyn.mli
+;;	3) etc.mli   
+;;	4) etc.ml     
+;;	5) interp.mli  
+;;	6) interp.ml
+;;	7) dumper.ml
+;;	8) dumper.mli     
+;;	9) tables.ml
+;;	10) tables.mli
+;;	11) main
+;;	12) Makefile
+;;	13) parse.mly
+;;	14) scanner.mll	  
+
