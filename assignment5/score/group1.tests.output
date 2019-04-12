@@ -1,0 +1,46 @@
+GNU Prolog 1.4.4 (64 bits)
+Compiled Nov  6 2014, 18:04:28 with gcc
+By Daniel Diaz
+Copyright (C) 1999-2013 Daniel Diaz
+| ?- $Id: group1.tests,v 1.3 2019-02-07 14:31:59-08 - - $
+
+yes
+| ?- compiling /afs/cats.ucsc.edu/users/o/qvdang/cs112/assignments/assignment5/score/database.pl for byte code...
+/afs/cats.ucsc.edu/users/o/qvdang/cs112/assignments/assignment5/score/database.pl compiled, 76 lines read - 11211 bytes written, 9 ms
+
+(1 ms) yes
+| ?- compiling /afs/cats.ucsc.edu/users/o/qvdang/cs112/assignments/assignment5/score/functions.pl for byte code...
+/afs/cats.ucsc.edu/users/o/qvdang/cs112/assignments/assignment5/score/functions.pl compiled, 133 lines read - 16879 bytes written, 9 ms
+
+(3 ms) yes
+| ?- depart LAX Los Angeles      M: 0
+12:00
+arrive ATL Atlanta          15:53
+depart ATL Atlanta          11:30
+arrive MIA Miami            12:41
+
+yes
+| ?- depart SEA Seattle-Tacoma   M: 0
+10:00
+arrive DEN Denver-Stapleton M: 2
+12:02
+depart DEN Denver-Stapleton 12:30
+arrive CHI Chicago          14:18
+depart CHI Chicago          M: 0
+12:00
+arrive NYC New York City    13:27
+depart NYC New York City    12:15
+arrive BOS Boston-Logan     12:38
+
+yes
+| ?- depart BOS Boston-Logan     7:30
+arrive NYC New York City    7:53
+depart NYC New York City    M: 0
+11:00
+arrive CHI Chicago          12:27
+
+yes
+| ?- There is no flight from SJC San Jose         to DFW Dallas-Ft.Worth 
+
+no
+| ?- 
