@@ -1,0 +1,7 @@
+Object: nil error: did not understand #value
+MessageNotUnderstood(Exception)>>signal (ExcHandling.st:254)
+UndefinedObject(Object)>>doesNotUnderstand: #value (SysExcept.st:1448)
+BitStream>>nextBit (hzip.st:171)
+optimized [] in UndefinedObject>>executeStatements (hzip.st:347)
+True>>ifTrue: (True.st:64)
+UndefinedObject>>executeStatements (hzip.st:331)

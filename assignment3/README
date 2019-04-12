@@ -1,0 +1,24 @@
+" README
+  CMPS 112 - WINTER 2019
+  Quang Dang
+  qvdang
+ 
+  Assignment 3 - Compression/Decompression a file
+
+  DESCRIPTION
+      The program use for compress or decompress a file. With
+      options:
+          -d: debug information is printed.
+          -t: The compression algorithm is activated, and decoding 
+              tree is printed to the standard output.
+          -c: The input file is compressed and written to the output 
+              file, if special, or to standard output, if not.
+          -u: The input file is assumed to be compressed, and is
+              uncompressed, written to output file, if special, or 
+              to the standard output, if not.
+        The student has used some functions which are given during 
+      lectures or are given in example-files folder as well.
+ FILES SUBMIT :
+        1) README
+        2) hzip.st
+"
