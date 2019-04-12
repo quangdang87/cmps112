@@ -1,0 +1,293 @@
+#!/usr/bin/perl -w
+# Quang Dang
+# qvdang@ucsc.edu
+# $Id: pmake,v 1.16 2019-03-04 22:30:01-08 - - $
+
+use strict;
+use warnings;
+use Getopt::Std;
+use Data::Dumper;
+
+$0 =~ s|.*/||;
+my %macros;
+my %target;
+
+# Subroutine
+sub substitute{
+    my ($line) = @_;
+    my @value;
+    my @element = split " ", $line;
+    for my $val (@element) {
+        if ($val =~ m/\${([^}]+)}/) {
+             my $tempo = $1;
+             if ($macros{$tempo}) {
+                 $val =~ s/\${[^}]+}/$macros{$tempo}/;
+             }
+             else {
+                  print "There is no macro with key: $tempo.\n";
+                  exit 1;
+             }
+         }
+    push @value, $val;
+    }
+    return join " ", @value;
+}
+sub macro_build {
+    my ($line) = @_;
+    if ($line =~ m/(\S+)\s*=\s*(.*)/) {
+        my $key = $1;
+        my $temp1 = $2;
+        my $value;
+        if ($temp1 =~ m/\${[^}]+}/) {
+            $value = substitute($temp1);
+        }
+        else {
+            $value = $temp1;
+        }
+        $macros{$key} = $value;
+    }
+}
+
+sub mtime {
+    my ($filename) = @_;
+    my @stat = stat $filename;
+    return @stat ? $stat[9] : undef; 
+}
+
+open (my $FILE, "<", "Makefile") || die ("Could not open Makefile");
+my %option;
+my $key;
+getopts ('d', \%option);
+while (my $line = <$FILE>) 
+{
+    chomp $line;
+    if ($line =~ m/(^\S+)\s*=\s*./) 
+    {
+        macro_build ($line);
+    } 
+    if (($line =~ m/^(\S+)\s*:\s*(.*)/) 
+        && ((substr $line, 0, 1) ne "#"))
+    {
+        my $temp2 = $1;
+        my $depen = $2;
+        if($temp2 =~ m/\${[^}]+}/) {
+            $key = substitute($temp2);
+        }
+        else {
+            $key = $temp2;
+        }
+        if ($depen =~ m/\${([^}]+)}/) {
+            my $temp1 = $depen;
+            $depen = substitute($temp1);
+        }
+        my @deps = split (" ", $depen);
+        $target{$key}{'deps'} = \@deps;
+        $target{$key}{'timestamp'} = 0;
+        my @command;
+        if (!$target{$key}{'cmds'}) {
+           $target{$key}{'cmds'} = \@command;
+        }
+    }
+    if ($line =~ m/\t(\S+\s*.*)/)
+    {
+        my @command = @{$target{$key}{'cmds'}};
+        my $comm = $1;
+        if ($comm =~ m/\${([^}]+)}/) {
+            my $temp = $comm;
+            $comm = substitute($temp);
+        }
+        push @command, $comm;
+        $target{$key}{'cmds'} = \@command;}
+    }
+
+# check for macro_target;
+sub collect {
+    my ($ext) = @_;
+    my @exts = split /\./, $ext;
+    $ext = $exts[1];
+    my @key_collect;
+    my $key1;
+    for my $m (keys %macros) {
+        my @array = split (" ", $macros{$m});
+        for my $a (@array) {
+            if ($a =~ m/^\b(\w+\.$ext)\b$/) {
+                $key1 = $1;
+                if (!@key_collect) {
+                    push @key_collect, $key1;
+                }
+                else {
+                    my $exists = 0;
+                    for my $k_c (@key_collect) {
+                        if ($k_c eq $key1) {
+                            $exists = 1;
+                        }
+                    }
+                    if (!$exists) {
+                        push @key_collect, $key1;
+                    }
+                }
+            }
+        }
+    }
+    return @key_collect;
+}
+my @key_collect;
+my @deps_collect;
+for my $k (keys %target) {
+    if ( $k =~ m/^(%)(\..*)/ ) {
+        my $ext1 = $2;
+        my $str;
+        @key_collect = collect($ext1);
+        for my $k1 (@key_collect) {
+            my @name = split /\./, $k1;
+            my $n = $name[0]; 
+            if ($target{$k}{'deps'} != 0) {
+                $str = join " ", @{$target{$k}{'deps'}};
+            }
+            $str =~ s/%/$n/g;
+            my @deps = split " ", $str;
+            my @command;
+            if ($target{$k}{'cmds'} != 0) {
+                for my $i (@{$target{$k}{'cmds'}}) {
+                    push @command, $i;
+                }
+            }
+            my $flag = 0;
+            for my $k3 (keys %target){
+                if ($k1 eq $k3) {
+                    $flag = 1;
+                }
+            }
+            if (!$flag) {
+                $target{$k1}{'deps'} = \@deps;
+                $target{$k1}{'cmds'} = \@command;
+                $target{$k1}{'timestamp'} = 0;
+            }
+            else {
+                $target{$k1}{'cmds'} = \@command;
+            }
+        }
+    }
+}
+for my $k (keys %target) {
+    if ($target{$k}{'cmds'} != 0) {
+        if (grep (/\$</, @{$target{$k}{'cmds'}})) {
+            for my $c (@{$target{$k}{'cmds'}}) {
+                my $first = ${$target{$k}{'deps'}}[0]; 
+                $c =~ s/\$</$first/g;
+            }
+        }
+        if (grep (/\$\$/, @{$target{$k}{'cmds'}})) {
+            for my $c (@{$target{$k}{'cmds'}}) {
+                $c =~ s/\$\$/\$/g;
+            }
+        }
+        if (grep (/\$@/, @{$target{$k}{'cmds'}})) {
+            for my $c (@{$target{$k}{'cmds'}}) {
+                $c =~ s/\$@/$k/g;
+            }
+        }
+    }
+}
+sub time_check {
+    my ($file1, $file2) = @_;
+    my $time1;
+    my $time2;
+    if ($target{$file1}) {
+        $time1 = $target{$file1}{'timestamp'};
+    }
+    else {
+         $time1 = mtime($file1);
+    }
+    if ($target{$file2}) {
+        $time2 = $target{$file2}{'timestamp'}
+    }
+    else {
+    $time2 = mtime($file2);
+    }
+    if ((undef $time2) || (defined $time2 >=  $time1)) {
+         return 1;
+    }
+    else { return 0;}
+}
+sub exe_comm {
+    my (@comm) = @_;
+    for my $com (@comm) {
+        my $flag = 1;
+        if (substr($com, 0, 1) ne "@"){
+            print "$com\n";
+        }
+        else {
+            $com =~ s/^.{2}//s;
+        }
+        if ((substr $com, 0,1) eq "-") {
+            $flag = 0;
+            $com =~ s/^.{2}//s;
+         }
+         system($com);
+         my $term_signal = $? & 0x7F;
+         my $core_dumped = $? & 0x80;
+         my $exit_status = ($? >> 8) & 0xFF;
+         if ($exit_status != 0 && $flag == 1) {
+         exit $exit_status;
+        }
+    }
+}
+my $temp = 0;
+sub execute {
+    my ($key2, @prere) = @_;
+    if (@prere == 0) {
+        my @comm_arr = @{$target{$key2}{'cmds'}};
+        exe_comm(@comm_arr);
+        $temp = 1;
+    }
+    else {
+         for my $dep (@prere){
+             if ($target{$dep}) {
+                 execute($dep, @{$target{$dep}{'deps'}});
+             }
+             else {
+                 $temp = time_check($key2, $dep);
+             }
+         }
+         if (($temp == 1) && ($target{$key2}{'cmds'} != 0)) {
+             my @comm_arr = @{$target{$key2}{'cmds'}};
+             exe_comm(@comm_arr);
+         }
+    }
+}
+seek $FILE, 0,0;
+if ( grep(/d/, %option)){
+    print "-----Debug option------\n";
+    print "print the \%target and \%macros table\n";
+    print "\%target Table.\n";
+    print Dumper(%target);
+    print "\%macros Table.\n";
+    print Dumper(%macros);
+}
+if (@ARGV == 0) {
+    my $flag = 1;
+    while (defined $FILE && (my $line = <$FILE>) && ($flag==1) ){
+        chomp $line;
+        if (($line =~ m/(\S+)\s*:\s*(.*)/)&& 
+            ((substr $line, 0,1) ne "#")) {
+            my $key1 = $1;
+            my @deps_arr = @{$target{$key1}{'deps'}};
+            execute ($key1, @deps_arr);
+            #update timestamp;
+            $target{$key1}{'timestamp'} = time();
+            $flag = 0; # terminate
+        }
+    }
+    close($FILE); #close the file;
+}
+elsif (@ARGV >= 1) {
+    my (@arr_arg) = @ARGV;
+    for my $item (@arr_arg) {
+        if (exists $target{$item}) {
+            my @deps_arr = @{$target{$item}{'deps'}};
+            execute($item, @deps_arr);
+            $target{$item}{'timestamp'} = time();
+        }
+    }
+}
