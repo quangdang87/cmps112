@@ -1,0 +1,15 @@
+;; README
+;; CMPS 112 - WINTER 2019
+;; Quang Dang
+;; qvdang
+;; 
+;; Assignment 1 - SBIR interpreter
+;;
+;; DESCRIPTION
+;; 	The program use for interpret codes in BASIC language. 
+;;	The student has used some functions which are given during lectures
+;; or are given in "sbi.scm" example file as well.
+;; FILES SUBMIT :
+;;	1) README
+;;	2) sbi.scm
+

@@ -1,0 +1,6 @@
+open-input-file: cannot open input file
+  path: /afs/cats.ucsc.edu/users/o/qvdang/cs112/assignments/assignment1/score/12-let.sbir
+  system error: No such file or directory; errno=2
+  context...:
+   /afs/cats.ucsc.edu/users/o/qvdang/cs112/assignments/assignment1/score/./sbi.scm:364:0: readlist-from-inputfile
+   /afs/cats.ucsc.edu/users/o/qvdang/cs112/assignments/assignment1/score/./sbi.scm:442:0: main
